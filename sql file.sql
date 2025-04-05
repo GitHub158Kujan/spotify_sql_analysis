@@ -60,40 +60,37 @@ SELECT DISTINCT(most_played_on) FROM spotify;
 
 --Data analysis
 
---Retrieve the names of all tracks that have more than 1 billion streams.
+--Tracks that have more than 1 billion streams.
 SELECT track,stream FROM spotify WHERE stream>1000000000
 
---List all albums along with their respective artists.
+--Albums along with their respective artists.
 SELECT DISTINCT album,artist FROM spotify;
 
---Get the total number of comments for tracks where licensed = TRUE.
+--Total number of comments for tracks where licensed = TRUE.
 SELECT SUM(comments) FROM spotify WHERE licensed = 'TRUE'
 
---Find all tracks that belong to the album type single.
+--Tracks that belong to the album type single.
 SELECT track,album_type FROM spotify WHERE album_type='single';
 
 --Count the total number of tracks by each artist.
 SELECT artist,count(track) FROM spotify GROUP BY artist;
 
--------------------------------------------------------------
---Medium Level
-
---Calculate the average danceability of tracks in each album.
+--Average danceability of tracks in each album.
 SELECT album,AVG(danceability) FROM spotify
 GROUP BY album;
 
---Find the top 5 tracks with the highest energy values.
+--Top 5 tracks with the highest energy values.
 SELECT track,MAX(energy)
 FROM spotify
 GROUP BY track
 ORDER BY energy DESC LIMIT 5;
 
---List all tracks along with their views and likes where official_video = TRUE.
+--All tracks along with their views and likes where official_video = TRUE.
 SELECT track, views,likes 
 FROM spotify
 WHERE official_video=TRUE;
 
---For each album, calculate the total views of all associated tracks.
+--For each album, total views of all associated tracks.
 SELECT album, SUM(views) as total_views
 FROM spotify
 GROUP BY album,track;
@@ -109,7 +106,30 @@ WHERE streamed_on_spotify>streamed_on_youtube
 AND 
 streamed_on_youtube!=0;
 
---Advanced Level
-Find the top 3 most-viewed tracks for each artist using window functions.
-Write a query to find tracks where the liveness score is above the average.
-Use a WITH clause to calculate the difference between the highest and lowest energy values for tracks in each album.
+--Top 3 most-viewed tracks for each artist using window functions.
+SELECT *
+FROM (
+    SELECT *,
+           RANK() OVER (PARTITION BY Artist ORDER BY Views DESC) AS view_rank
+    FROM spotify_dataset
+) ranked
+WHERE view_rank <= 3;
+
+--Tracks where the liveness score is above the average.
+SELECT *
+FROM spotify_dataset
+WHERE Liveness > (
+    SELECT AVG(Liveness)
+    FROM spotify_dataset
+);
+
+--Difference between the highest and lowest energy values for tracks in each album.
+WITH energy_diff AS (
+    SELECT Album,
+           MAX(Energy) AS max_energy,
+           MIN(Energy) AS min_energy,
+           MAX(Energy) - MIN(Energy) AS energy_range
+    FROM spotify_dataset
+    GROUP BY Album
+)
+SELECT * FROM energy_diff;
